@@ -708,7 +708,7 @@ export function useModelState(): ModelState {
     for (const dm of exportModel.DataModel ?? []) {
       if (dm.ModelSchema) dm.ModelSchema.data = []
     }
-    saveFile(JSON.stringify(exportModel), (exportModel.ModelName ?? 'export') + '.json', 'json')
+    saveFile(JSON.stringify(exportModel, null, 2), (exportModel.ModelName ?? 'export') + '.json', 'json')
   }, [model])
 
   // ── load model from file ─────────────────────────────────────────────────────

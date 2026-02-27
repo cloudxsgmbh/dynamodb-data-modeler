@@ -506,7 +506,7 @@ export function exportOneTableSchema(schema: Schema, jsonData: DynamoItem[]): st
     }
     output.data.push(item)
   }
-  return JSON.stringify(output, null, 4)
+  return JSON.stringify(output, null, 2)
 }
 
 /** Trigger a browser file download */
