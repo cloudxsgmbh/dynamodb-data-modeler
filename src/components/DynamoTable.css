@@ -1,0 +1,143 @@
+.dynamo-table-wrapper {
+  overflow-x: auto;
+}
+
+.dynamo-table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 400px;
+}
+
+.dynamo-table th,
+.dynamo-table td {
+  border: 1px solid #aaa;
+  padding: 4px 8px;
+  vertical-align: middle;
+}
+
+.dynamo-table thead th {
+  background: #e8e8e8;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pk-header {
+  text-align: center;
+  width: 40%;
+}
+
+.pk-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+}
+
+.attr-header {
+  text-align: left;
+}
+
+.attr-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attr-header-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.key-cell {
+  background: #f0f0f0;
+  font-weight: 500;
+}
+
+.td-key {
+  background: #fff8ee;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.grey-header {
+  background: #d8d8d8;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.dynamo-table tbody tr:hover td {
+  background: rgba(255, 191, 112, 0.15);
+}
+
+/* Editable cells */
+.editable-cell {
+  outline: none;
+  min-width: 60px;
+  min-height: 1.2em;
+  display: inline-block;
+  border-radius: 2px;
+  padding: 1px 3px;
+  cursor: text;
+}
+
+.editable-cell:focus {
+  background: #fffbe8;
+  box-shadow: 0 0 0 2px #eeba37;
+}
+
+.editable-cell:empty::before {
+  content: attr(data-placeholder);
+  color: #bbb;
+}
+
+/* Key cell wrapper with +/- buttons */
+.key-cell-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.key-btn-row {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 1px 5px;
+  color: #555;
+  min-width: 20px;
+}
+
+.icon-btn:hover {
+  background: #ec7211;
+  color: #fff;
+  border-color: #ec7211;
+}
+
+.float-right {
+  margin-left: auto;
+}
+
+.map-placeholder {
+  color: #888;
+  cursor: alias;
+  font-style: italic;
+}
+
+.attribute-name-cell {
+  border: 1px dashed #aaa;
+  min-width: 80px;
+}

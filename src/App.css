@@ -1,0 +1,299 @@
+/* ── Reset & Base ──────────────────────────────────────────────────────────── */
+
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: AmazonEmber, 'Helvetica Neue Light', 'Helvetica Neue', Helvetica, Arial,
+    'Lucida Grande', sans-serif;
+  font-weight: 300;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+  color: #444;
+  background: #fafafa;
+}
+
+a {
+  color: #0066cc;
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.app-header {
+  background: #232f3e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.app-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dynamo-icon {
+  font-size: 28px;
+}
+
+.app-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0;
+  color: #fff;
+}
+
+.menu-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.menu-btn:hover { background: rgba(255,255,255,0.15); }
+
+/* ── Side nav ────────────────────────────────────────────────────────────── */
+
+.sidenav {
+  background: radial-gradient(ellipse at center, #ffa735 0%, #ea8100 100%);
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 200;
+  top: 0;
+  left: 0;
+  overflow-x: hidden;
+  transition: width 0.3s;
+  padding-top: 60px;
+  box-shadow: 4px 0 8px rgba(0,0,0,0.3);
+}
+
+.sidenav.open { width: 260px; }
+
+.sidenav nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidenav nav a {
+  padding: 12px 12px 12px 32px;
+  text-decoration: none;
+  font-size: 20px;
+  color: #f1f1f1;
+  display: block;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+.sidenav nav a:hover { color: #fff; background: rgba(0,0,0,0.15); }
+
+.closebtn {
+  position: absolute;
+  top: 8px;
+  right: 20px;
+  font-size: 36px;
+  background: transparent;
+  border: none;
+  color: #f1f1f1;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.sidenav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: transparent;
+}
+
+/* ── Main ────────────────────────────────────────────────────────────────── */
+
+.main {
+  padding: 20px;
+}
+
+/* ── About section ───────────────────────────────────────────────────────── */
+
+.about-section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 40px;
+}
+
+.about-section h3 {
+  color: #232f3e;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+}
+
+.about-section code {
+  background: #f4f4f4;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* ── Table area ──────────────────────────────────────────────────────────── */
+
+.table-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────────────── */
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 2px solid #444;
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #a9a9a9;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #ffe3c6;
+  outline: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #333;
+  transition: background 0.2s;
+}
+.tab-btn:hover { background: #ffd0a0; }
+.tab-btn.active { background: #ffbf70; font-weight: 600; }
+
+.tab-title { font-weight: inherit; }
+
+.tab-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-icon-btn {
+  background: transparent;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 1px 5px;
+  color: #555;
+  line-height: 1;
+}
+.tab-icon-btn:hover { background: #ec7211; color: #fff; border-color: #ec7211; }
+
+.table-container {
+  border: 2px solid #444;
+  border-top: 0;
+  background: #d8d8d8;
+  padding: 0;
+  overflow: auto;
+}
+
+/* ── Query banner ────────────────────────────────────────────────────────── */
+
+.query-banner {
+  background: #fffbe8;
+  border: 1px solid #eeba37;
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #0066cc;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.btn-cancel {
+  border-color: #e76d0c #e15500 #e15500;
+  color: #fff;
+  background: linear-gradient(180deg, #f67c1b 0, #e15500);
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 6px 16px;
+  font-size: 14px;
+  border: 1px solid;
+}
+.btn-cancel:hover { opacity: 0.85; }
+
+.btn-ok {
+  border-color: #be952c #a68226 #9b7924;
+  background: linear-gradient(#fee6b0 0%, #eeba37 100%);
+  color: #333;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 6px 16px;
+  font-size: 14px;
+  border: 1px solid;
+}
+.btn-ok:hover { opacity: 0.85; }
+
+/* ── Form fields (in modals) ─────────────────────────────────────────────── */
+
+.field-label {
+  display: block;
+  font-weight: 600;
+  margin: 10px 0 4px;
+}
+
+.field-input {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.field-select {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.scroll-box {
+  background: #f4f4f4;
+  border: 2px solid rgba(0,0,0,0.1);
+  padding: 12px;
+  overflow-y: scroll;
+  resize: vertical;
+}
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+
+hr {
+  background: #ddd;
+  height: 1px;
+  border: 0;
+  margin: 12px 0;
+}
