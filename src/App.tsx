@@ -11,6 +11,7 @@ import {
   ImportOneTableModal,
   QueryModal,
 } from './components/Dialogs'
+import type { SavedQuery } from './modelUtils'
 import './App.css'
 
 export default function App() {
@@ -30,14 +31,24 @@ export default function App() {
   const [showQuery, setShowQuery] = useState(false)
   const [showValueTemplate, setShowValueTemplate] = useState(false)
   const [showDeleteAttr, setShowDeleteAttr] = useState(false)
-  const [confirmModal, setConfirmModal] = useState(null)
+  interface ConfirmModal {
+    title: string
+    message: string
+    onOk: () => void
+    onCancel: () => void
+  }
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null)
+
+  interface ModelMeta { name: string; author: string; description: string }
+  interface DeleteAttrPending { pkVal: string; skVal: string; attrName: string }
+  interface ValueTemplateMeta { entityType: string; attrName: string; currentValue: string }
 
   // Pending data for modals that need context
-  const [pendingModelMeta, setPendingModelMeta] = useState(null)
-  const [pendingDeleteAttr, setPendingDeleteAttr] = useState(null)
-  const [valueTemplateMeta, setValueTemplateMeta] = useState({ entityType: '', attrName: '', currentValue: '' })
+  const [pendingModelMeta, setPendingModelMeta] = useState<ModelMeta | null>(null)
+  const [pendingDeleteAttr, setPendingDeleteAttr] = useState<DeleteAttrPending | null>(null)
+  const [valueTemplateMeta, setValueTemplateMeta] = useState<ValueTemplateMeta>({ entityType: '', attrName: '', currentValue: '' })
 
-  const fileInputRef = useRef()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const hasModel = state.datamodel != null
   const gsiList = state.datamodel?.GlobalSecondaryIndexes || []
@@ -72,7 +83,7 @@ export default function App() {
 
   function handleLoadFromFile() {
     setSidenavOpen(false)
-    fileInputRef.current.click()
+    fileInputRef.current?.click()
   }
 
   function handleSaveToFile() {
@@ -91,16 +102,16 @@ export default function App() {
   }
 
   // ── file input ─────────────────────────────────────────────────────────────
-  function handleFileChange(e) {
-    const file = e.target.files[0]
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
     reader.onload = (evt) => {
       try {
-        state.loadModelFromFile(evt.target.result)
+        state.loadModelFromFile(evt.target?.result as string)
         afterLoad()
       } catch (err) {
-        alert('Failed to load model: ' + err.message)
+        alert('Failed to load model: ' + (err as Error).message)
       }
     }
     reader.readAsText(file)
@@ -108,13 +119,13 @@ export default function App() {
   }
 
   // ── create model flow ──────────────────────────────────────────────────────
-  function handleCreateModelNext(meta) {
+  function handleCreateModelNext(meta: ModelMeta) {
     setShowCreateModel(false)
     setPendingModelMeta(meta)
     setShowCreateTable(true)
   }
 
-  function handleCreateTableConfirm({ pk, sk, pkType, skType, name }) {
+  function handleCreateTableConfirm({ pk, sk, pkType, skType, name }: { pk: string; sk: string; pkType: string; skType: string; name: string }) {
     setShowCreateTable(false)
     if (pendingModelMeta) {
       state.createModel(pendingModelMeta, pk, sk, pkType, skType, name)
@@ -125,14 +136,14 @@ export default function App() {
     afterLoad()
   }
 
-  function handleCreateIndexConfirm({ pk, sk, pkType, skType, name }) {
+  function handleCreateIndexConfirm({ pk, sk, pkType, skType, name }: { pk: string; sk: string; pkType: string; skType: string; name: string }) {
     setShowCreateIndex(false)
     state.addGSI(name, pk, sk, pkType, skType)
     afterLoad()
   }
 
   // ── table switching ────────────────────────────────────────────────────────
-  function handleSelectTable(idx) {
+  function handleSelectTable(idx: number) {
     setShowSelectTable(false)
     if (idx === -1) {
       setShowCreateTable(true) // add new table
@@ -143,37 +154,39 @@ export default function App() {
   }
 
   // ── value template ─────────────────────────────────────────────────────────
-  function openValueTemplate(entityType, attrName) {
+  function openValueTemplate(entityType: string, attrName: string) {
     const currentValue = state.schema.models[entityType]?.[attrName]?.value || ''
     setValueTemplateMeta({ entityType, attrName, currentValue })
     setShowValueTemplate(true)
   }
 
-  function handleSaveValueTemplate(templateValue) {
+  function handleSaveValueTemplate(templateValue: string) {
     state.setValueTemplate(valueTemplateMeta.entityType, valueTemplateMeta.attrName, templateValue)
     setShowValueTemplate(false)
   }
 
   // ── delete attribute ───────────────────────────────────────────────────────
-  function openDeleteAttr(pkVal, skVal, attrName) {
+  function openDeleteAttr(pkVal: string, skVal: string, attrName: string) {
     setPendingDeleteAttr({ pkVal, skVal, attrName })
     setShowDeleteAttr(true)
   }
 
   function handleDeleteAttrThisItem() {
+    if (!pendingDeleteAttr) return
     const { pkVal, skVal, attrName } = pendingDeleteAttr
     state.deleteAttribute(pkVal, skVal, attrName, false)
     setShowDeleteAttr(false)
   }
 
   function handleDeleteAttrAllItems() {
+    if (!pendingDeleteAttr) return
     const { pkVal, skVal, attrName } = pendingDeleteAttr
     state.deleteAttribute(pkVal, skVal, attrName, true)
     setShowDeleteAttr(false)
   }
 
   // ── query ──────────────────────────────────────────────────────────────────
-  function handleRunQuery(queryObj) {
+  function handleRunQuery(queryObj: SavedQuery) {
     state.applyQuery(queryObj)
     setShowQuery(false)
     afterLoad()
@@ -187,8 +200,8 @@ export default function App() {
   const displayData = state.matchData.length > 0 ? state.matchData : state.jsonData
 
   // ── determine GSI display data (re-sort from full tableData) ───────────────
-  function getGSIData(gsi) {
-    return state.datamodel?.TableData || []
+  function getGSIData(_gsi: unknown) {
+    return state.datamodel?.TableData ?? []
   }
 
   // ── tab rendering ──────────────────────────────────────────────────────────
@@ -201,7 +214,7 @@ export default function App() {
       pasteItem: state.pasteItem,
       onAddAttribute: state.addAttribute,
       onNameAttribute: state.nameAttribute,
-      onDeletePartition: (pkVal) => {
+      onDeletePartition: (pkVal: string) => {
         setConfirmModal({
           title: 'Delete Partition',
           message: `All items in the '${pkVal}' partition will be deleted, continue?`,
@@ -209,7 +222,7 @@ export default function App() {
           onCancel: () => setConfirmModal(null),
         })
       },
-      onDeleteItem: (pkVal, skVal) => {
+      onDeleteItem: (pkVal: string, skVal: string) => {
         if (pkVal === '~new~') { alert('Items cannot be deleted from new partitions.'); return }
         if (skVal === '~new~') { alert('New Items cannot be deleted.'); return }
         setConfirmModal({
@@ -427,7 +440,7 @@ export default function App() {
             setShowImportOneTable(false)
             afterLoad()
           } catch (err) {
-            alert('Import failed: ' + err.message)
+            alert('Import failed: ' + (err as Error).message)
           }
         }}
       />

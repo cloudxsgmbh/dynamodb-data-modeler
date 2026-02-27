@@ -1,7 +1,15 @@
 import React from 'react'
 import './Modal.css'
 
-export function Modal({ show, onClose, title, children, width = 500 }) {
+interface ModalProps {
+  show: boolean
+  onClose: () => void
+  title?: string
+  children: React.ReactNode
+  width?: number
+}
+
+export function Modal({ show, onClose, title, children, width = 500 }: ModalProps) {
   if (!show) return null
   return (
     <div className="modal-overlay" onClick={onClose}>

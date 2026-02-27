@@ -1,12 +1,42 @@
-import React, { useState, useRef, useCallback } from 'react'
-import { getValue, sortObjectList, fakeUUID } from '../modelUtils'
-import { ContextMenu } from './ContextMenu'
+import React, { useState } from 'react'
+import { getValue, sortObjectList, type DynamoItem, type Schema } from '../modelUtils'
+import { ContextMenu, type ContextMenuItem, type ContextMenuPosition } from './ContextMenu'
 import './DynamoTable.css'
 
-/**
- * Renders a single DynamoDB partition/sort-key table view.
- * Works for both the primary table (isEditable=true) and GSI views (isEditable=false).
- */
+interface ContextMenuState {
+  x: number
+  y: number
+  items: ContextMenuItem[]
+}
+
+interface DynamoTableProps {
+  jsonData: DynamoItem[]
+  partitionKey: string
+  sortKey: string
+  sortKeyDatatype: string
+  schema: Schema
+  showValues: boolean
+  isEditable: boolean
+  pasteItem: DynamoItem
+  onAddItem: (pkVal: string) => void
+  onAddAttribute: (pkVal: string, skVal: string, attrName: string) => void
+  onNameAttribute: (pkVal: string, skVal: string, oldName: string, newName: string) => void
+  onUpdatePK: (oldPK: string, newPK: string) => void
+  onUpdateValue: (pkVal: string, skVal: string, attrName: string, newVal: string) => void
+  onDeletePartition: (pkVal: string) => void
+  onDeleteItem: (pkVal: string, skVal: string) => void
+  onDeleteAttribute: (pkVal: string, skVal: string, attrName: string) => void
+  onCutItem: (pkVal: string, skVal: string) => void
+  onCopyItem: (pkVal: string, skVal: string) => void
+  onPasteItem: (pkVal: string) => void
+  onMovePartition: (pkVal: string, direction: 'up' | 'down') => void
+  onShowValueTemplate: (entityType: string, attrName: string) => void
+  onGenerateUUID: (pkVal: string, skVal: string, attrName: string) => void
+  onGenerateDate: (pkVal: string, skVal: string, attrName: string) => void
+  onUndo: () => void
+  onToggleSchema: () => void
+}
+
 export function DynamoTable({
   jsonData,
   partitionKey,
@@ -16,39 +46,40 @@ export function DynamoTable({
   showValues,
   isEditable,
   pasteItem,
-  // callbacks
-  onAddItem,        // (pkVal) => void
-  onAddAttribute,   // (pkVal, skVal, attrName) => void
-  onNameAttribute,  // (pkVal, skVal, oldName, newName) => void
-  onUpdatePK,       // (oldPK, newPK) => void
-  onUpdateValue,    // (pkVal, skVal, attrName, newVal) => void
-  onDeletePartition,// (pkVal) => void
-  onDeleteItem,     // (pkVal, skVal) => void
-  onDeleteAttribute,// (pkVal, skVal, attrName) => void  -- opens modal
-  onCutItem,        // (pkVal, skVal) => void
-  onCopyItem,       // (pkVal, skVal) => void
-  onPasteItem,      // (pkVal) => void
-  onMovePartition,  // (pkVal, 'up'|'down') => void
-  onShowValueTemplate, // (entityType, attrName) => void
-  onGenerateUUID,   // (pkVal, skVal, attrName) => void
-  onGenerateDate,   // (pkVal, skVal, attrName) => void
+  onAddItem,
+  onAddAttribute,
+  onNameAttribute,
+  onUpdatePK,
+  onUpdateValue,
+  onDeletePartition,
+  onDeleteItem,
+  onDeleteAttribute,
+  onCutItem,
+  onCopyItem,
+  onPasteItem,
+  onMovePartition,
+  onShowValueTemplate,
+  onGenerateUUID,
+  onGenerateDate,
   onUndo,
   onToggleSchema,
-}) {
-  const [contextMenu, setContextMenu] = useState(null) // { x, y, items }
-  const [editingCell, setEditingCell] = useState(null)  // { pkVal, skVal, attr, value }
-  const editRef = useRef({})
+}: DynamoTableProps) {
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
 
-  const { sortedItems, uniqueValues } = sortObjectList(jsonData, partitionKey, sortKey, sortKeyDatatype)
+  const { sortedItems, uniqueValues } = sortObjectList(
+    jsonData,
+    partitionKey,
+    sortKey,
+    sortKeyDatatype,
+  )
 
-  // Calculate max attribute columns
   let maxAttrs = 0
   for (const obj of jsonData) {
-    const attrCount = Object.keys(obj).filter(k => k !== partitionKey && k !== sortKey).length
-    if (attrCount > maxAttrs) maxAttrs = attrCount
+    const count = Object.keys(obj).filter((k) => k !== partitionKey && k !== sortKey).length
+    if (count > maxAttrs) maxAttrs = count
   }
 
-  function openContextMenu(e, items) {
+  function openContextMenu(e: React.MouseEvent, items: ContextMenuItem[]) {
     e.preventDefault()
     e.stopPropagation()
     setContextMenu({ x: e.clientX, y: e.clientY, items })
@@ -58,50 +89,26 @@ export function DynamoTable({
     setContextMenu(null)
   }
 
-  function getEntityType(obj) {
-    return obj.type ? getValue(obj.type) : null
+  function getEntityType(obj: DynamoItem): string | null {
+    return obj['type'] ? getValue(obj['type']) : null
   }
 
-  function getEntity(obj) {
+  function getEntity(obj: DynamoItem) {
     const type = getEntityType(obj)
     return type && schema.models[type] ? schema.models[type] : null
   }
 
-  // ── editable cell helpers ────────────────────────────────────────────────
+  // ── context menu builders ─────────────────────────────────────────────────
 
-  function startEdit(key, value) {
-    setEditingCell({ key, value })
-    editRef.current[key] = value
-  }
-
-  function commitEdit(key, pkVal, skVal, attr, isNewAttrName = false) {
-    const newVal = editRef.current[key]
-    if (newVal === undefined || newVal === null) return
-    setEditingCell(null)
-
-    if (isNewAttrName) {
-      onNameAttribute(pkVal, skVal, '~new~', newVal.trim())
-    } else if (attr === partitionKey) {
-      onUpdatePK(pkVal, newVal.trim())
-    } else {
-      onUpdateValue(pkVal, skVal, attr, newVal.trim())
-    }
-  }
-
-  function buildPKContextMenuItems(pkVal, obj) {
-    const pkList = uniqueValues[partitionKey] || []
+  function buildPKContextMenuItems(pkVal: string, obj: DynamoItem): ContextMenuItem[] {
+    const pkList = uniqueValues[partitionKey] ?? []
     const isFirst = pkList[0] === pkVal
     const isLast = pkList[pkList.length - 1] === pkVal
     const hasPaste = Object.keys(pasteItem).length > 0
 
     return [
       { key: 'add', label: '➕ Add Item', onClick: () => onAddItem(pkVal) },
-      {
-        key: 'paste',
-        label: '📋 Paste Item',
-        disabled: !hasPaste,
-        onClick: () => onPasteItem(pkVal),
-      },
+      { key: 'paste', label: '📋 Paste Item', disabled: !hasPaste, onClick: () => onPasteItem(pkVal) },
       { key: 'delete', label: '🗑 Delete Partition', onClick: () => onDeletePartition(pkVal) },
       {
         key: 'function',
@@ -117,14 +124,14 @@ export function DynamoTable({
     ]
   }
 
-  function buildSKContextMenuItems(pkVal, skVal, obj) {
+  function buildSKContextMenuItems(pkVal: string, skVal: string, obj: DynamoItem): ContextMenuItem[] {
     const entity = getEntity(obj)
     const nonKeyAttrs = entity
-      ? Object.keys(entity).filter(k => k !== partitionKey && k !== sortKey && !obj.hasOwnProperty(k))
+      ? Object.keys(entity).filter((k) => k !== partitionKey && k !== sortKey && !Object.prototype.hasOwnProperty.call(obj, k))
       : []
 
-    const addAttrSubmenu = [
-      ...nonKeyAttrs.map(k => ({ key: k, label: k, onClick: () => onAddAttribute(pkVal, skVal, k) })),
+    const addAttrSubmenu: ContextMenuItem[] = [
+      ...nonKeyAttrs.map((k) => ({ key: k, label: k, onClick: () => onAddAttribute(pkVal, skVal, k) })),
       { key: 'new', label: 'New attribute…', onClick: () => onAddAttribute(pkVal, skVal, '~new~') },
     ]
 
@@ -152,7 +159,12 @@ export function DynamoTable({
     ]
   }
 
-  function buildAttrContextMenuItems(pkVal, skVal, attrName, obj) {
+  function buildAttrContextMenuItems(
+    pkVal: string,
+    skVal: string,
+    attrName: string,
+    obj: DynamoItem,
+  ): ContextMenuItem[] {
     const isType = attrName === 'type'
     return [
       {
@@ -181,60 +193,32 @@ export function DynamoTable({
     ]
   }
 
-  // ── cell rendering ───────────────────────────────────────────────────────
+  // ── row rendering ─────────────────────────────────────────────────────────
 
-  function EditableDiv({ cellKey, displayValue, onCommit, onContextMenu, className }) {
-    const isEditing = editingCell?.key === cellKey
+  const rows: React.ReactNode[] = []
 
-    return (
-      <div
-        className={`editable-cell ${className || ''}`}
-        contentEditable={isEditing}
-        suppressContentEditableWarning
-        onFocus={() => {
-          if (!isEditing) startEdit(cellKey, displayValue)
-        }}
-        onBlur={(e) => {
-          editRef.current[cellKey] = e.currentTarget.textContent
-          onCommit()
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            editRef.current[cellKey] = e.currentTarget.textContent
-            e.currentTarget.blur()
-          }
-        }}
-        onContextMenu={onContextMenu}
-      >
-        {displayValue}
-      </div>
-    )
-  }
-
-  // Render the table rows
-  const rows = []
   for (const group of sortedItems) {
     let pkRendered = false
+
     for (let rowIdx = 0; rowIdx < group.length; rowIdx++) {
       const obj = group[rowIdx]
-      if (!obj.hasOwnProperty(partitionKey)) continue
-      if (sortKey && sortKey !== '' && !obj.hasOwnProperty(sortKey)) continue
+      if (!Object.prototype.hasOwnProperty.call(obj, partitionKey)) continue
+      if (sortKey && !Object.prototype.hasOwnProperty.call(obj, sortKey)) continue
 
       const pkVal = getValue(obj[partitionKey])
       const skVal = sortKey ? getValue(obj[sortKey]) : ''
       const entity = getEntity(obj)
-      const entityType = getEntityType(obj)
 
-      const attrNames = Object.keys(obj).filter(k => k !== partitionKey && k !== sortKey)
+      const attrNames = Object.keys(obj).filter((k) => k !== partitionKey && k !== sortKey)
 
-      // PK cell (only for first item in group)
-      let pkCell = null
+      // ── PK cell ──────────────────────────────────────────────────────────
+      let pkCell: React.ReactNode = null
       if (!pkRendered) {
         pkRendered = true
-        const pkDisplay = !showValues && entity && entity[partitionKey]
-          ? (entity[partitionKey].value || entity[partitionKey].type || pkVal)
-          : pkVal
+        const pkDisplay =
+          !showValues && entity?.[partitionKey]
+            ? (entity[partitionKey].value ?? entity[partitionKey].type ?? pkVal)
+            : pkVal
 
         pkCell = (
           <td
@@ -252,8 +236,8 @@ export function DynamoTable({
                   contentEditable
                   suppressContentEditableWarning
                   onBlur={(e) => {
-                    const newVal = e.currentTarget.textContent.trim()
-                    if (newVal !== pkVal) onUpdatePK(pkVal, newVal)
+                    const newVal = e.currentTarget.textContent?.trim() ?? ''
+                    if (newVal && newVal !== pkVal) onUpdatePK(pkVal, newVal)
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
@@ -262,16 +246,8 @@ export function DynamoTable({
                   {pkDisplay}
                 </div>
                 <div className="key-btn-row">
-                  <button
-                    className="icon-btn"
-                    title="Delete Partition"
-                    onClick={() => onDeletePartition(pkVal)}
-                  >−</button>
-                  <button
-                    className="icon-btn"
-                    title="Add Item"
-                    onClick={() => onAddItem(pkVal)}
-                  >+</button>
+                  <button className="icon-btn" title="Delete Partition" onClick={() => onDeletePartition(pkVal)}>−</button>
+                  <button className="icon-btn" title="Add Item" onClick={() => onAddItem(pkVal)}>+</button>
                 </div>
               </div>
             ) : (
@@ -281,12 +257,13 @@ export function DynamoTable({
         )
       }
 
-      // SK cell
-      let skCell = null
-      if (sortKey && sortKey !== '') {
-        const skDisplay = !showValues && entity && entity[sortKey]
-          ? (entity[sortKey].value || entity[sortKey].type || (skVal.startsWith('~new~') ? '~new~' : skVal))
-          : (skVal.startsWith('~new~') ? '~new~' : skVal)
+      // ── SK cell ──────────────────────────────────────────────────────────
+      let skCell: React.ReactNode = null
+      if (sortKey) {
+        const skDisplay =
+          !showValues && entity?.[sortKey]
+            ? (entity[sortKey].value ?? entity[sortKey].type ?? (skVal.startsWith('~new~') ? '~new~' : skVal))
+            : skVal.startsWith('~new~') ? '~new~' : skVal
 
         skCell = (
           <td key={`sk-${pkVal}-${skVal}`} className="td-key sk-cell" rowSpan={2}>
@@ -300,8 +277,8 @@ export function DynamoTable({
                   contentEditable
                   suppressContentEditableWarning
                   onBlur={(e) => {
-                    const newVal = e.currentTarget.textContent.trim()
-                    if (newVal !== skVal) onUpdateValue(pkVal, skVal, sortKey, newVal)
+                    const newVal = e.currentTarget.textContent?.trim() ?? ''
+                    if (newVal && newVal !== skVal) onUpdateValue(pkVal, skVal, sortKey, newVal)
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
@@ -310,16 +287,8 @@ export function DynamoTable({
                   {skDisplay}
                 </div>
                 <div className="key-btn-row">
-                  <button
-                    className="icon-btn"
-                    title="Delete Item"
-                    onClick={() => onDeleteItem(pkVal, skVal)}
-                  >−</button>
-                  <button
-                    className="icon-btn"
-                    title="Add Attribute"
-                    onClick={() => onAddAttribute(pkVal, skVal, '~new~')}
-                  >+</button>
+                  <button className="icon-btn" title="Delete Item" onClick={() => onDeleteItem(pkVal, skVal)}>−</button>
+                  <button className="icon-btn" title="Add Attribute" onClick={() => onAddAttribute(pkVal, skVal, '~new~')}>+</button>
                 </div>
               </div>
             ) : (
@@ -329,27 +298,25 @@ export function DynamoTable({
         )
       }
 
-      // Attribute header + value cells
-      const headerCells = []
-      const valueCells = []
+      // ── Attribute cells ──────────────────────────────────────────────────
+      const headerCells: React.ReactNode[] = []
+      const valueCells: React.ReactNode[] = []
 
       for (const attrName of attrNames) {
         const value = obj[attrName]
         const valueType = value ? Object.keys(value)[0] : 'S'
         const isMap = valueType === 'M'
+        const isNewAttr = attrName === '~new~'
 
-        // Display value
         let displayVal = ''
-        if (!showValues && entity && entity[attrName]) {
-          displayVal = attrName === 'type'
-            ? getValue(value)
-            : (entity[attrName].value || entity[attrName].type || getValue(value))
+        if (!showValues && entity?.[attrName]) {
+          displayVal =
+            attrName === 'type'
+              ? getValue(value)
+              : (entity[attrName].value ?? entity[attrName].type ?? getValue(value)) ?? ''
         } else {
           displayVal = getValue(value)
         }
-
-        const isNewAttr = attrName === '~new~'
-        const cellKey = `attr-name-${pkVal}-${skVal}-${attrName}`
 
         headerCells.push(
           <td key={`h-${attrName}`} className="grey-header">
@@ -360,30 +327,30 @@ export function DynamoTable({
                 suppressContentEditableWarning
                 autoFocus
                 onBlur={(e) => {
-                  const newName = e.currentTarget.textContent.trim()
-                  if (newName && newName !== '~new~') {
-                    onNameAttribute(pkVal, skVal, '~new~', newName)
-                  }
+                  const newName = e.currentTarget.textContent?.trim() ?? ''
+                  if (newName && newName !== '~new~') onNameAttribute(pkVal, skVal, '~new~', newName)
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
                 }}
               />
-            ) : attrName}
-          </td>
+            ) : (
+              attrName
+            )}
+          </td>,
         )
 
         valueCells.push(
           <td key={`v-${attrName}`}>
             {isMap ? (
-              <span className="map-placeholder" title="Map type - nested display not supported">…</span>
+              <span className="map-placeholder" title="Map type – nested display not supported">…</span>
             ) : isEditable ? (
               <div
                 className="editable-cell cell-context-menu"
                 contentEditable
                 suppressContentEditableWarning
                 onBlur={(e) => {
-                  const newVal = e.currentTarget.textContent.trim()
+                  const newVal = e.currentTarget.textContent?.trim() ?? ''
                   if (newVal !== displayVal) onUpdateValue(pkVal, skVal, attrName, newVal)
                 }}
                 onKeyDown={(e) => {
@@ -398,11 +365,10 @@ export function DynamoTable({
             ) : (
               <span>{displayVal}</span>
             )}
-          </td>
+          </td>,
         )
       }
 
-      // Two rows per item: header row + value row
       rows.push(
         <React.Fragment key={`row-${pkVal}-${skVal}`}>
           <tr>
@@ -410,13 +376,13 @@ export function DynamoTable({
             {skCell}
             {headerCells}
           </tr>
-          <tr>
-            {valueCells}
-          </tr>
-        </React.Fragment>
+          <tr>{valueCells}</tr>
+        </React.Fragment>,
       )
     }
   }
+
+  // ── render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="dynamo-table-wrapper">
@@ -427,11 +393,9 @@ export function DynamoTable({
               <div className="pk-header-inner">
                 Primary Key
                 {isEditable && (
-                  <button
-                    className="icon-btn float-right"
-                    title="Add Partition"
-                    onClick={() => onAddItem('')}
-                  >+</button>
+                  <button className="icon-btn float-right" title="Add Partition" onClick={() => onAddItem('')}>
+                    +
+                  </button>
                 )}
               </div>
             </th>
@@ -445,11 +409,7 @@ export function DynamoTable({
                 Attributes
                 {isEditable && (
                   <span className="attr-header-controls">
-                    <button
-                      className="icon-btn"
-                      title="Undo Change"
-                      onClick={onUndo}
-                    >↩</button>
+                    <button className="icon-btn" title="Undo Change" onClick={onUndo}>↩</button>
                     <button
                       className="icon-btn schema-toggle"
                       title={showValues ? 'Show Schema' : 'Show Values'}
@@ -464,7 +424,7 @@ export function DynamoTable({
           </tr>
           <tr>
             <th className="key-cell">{partitionKey}</th>
-            {sortKey && sortKey !== '' && <th className="key-cell">{sortKey}</th>}
+            {sortKey && <th className="key-cell">{sortKey}</th>}
           </tr>
         </thead>
         <tbody>{rows}</tbody>
@@ -473,7 +433,7 @@ export function DynamoTable({
       {contextMenu && (
         <ContextMenu
           items={contextMenu.items}
-          position={{ x: contextMenu.x, y: contextMenu.y }}
+          position={contextMenu as ContextMenuPosition}
           onClose={closeContextMenu}
         />
       )}
