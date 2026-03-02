@@ -96,6 +96,7 @@ export interface ModelState {
   setValueTemplate: (entityType: string, attrName: string, templateValue: string) => void
   toggleSchema: () => void
   addGSI: (indexName: string, pk: string, sk: string, pkType: string, skType: string, projectionType: ProjectionType, includeAttrs: string[]) => void
+  deleteGSI: (indexName: string) => void
   addNewTable: (tableName: string, pk: string, sk: string, pkType: string, skType: string) => void
   switchTable: (idx: number) => void
   applyQuery: (queryObj: SavedQuery) => void
@@ -238,6 +239,22 @@ export function useModelState(): ModelState {
       dm.GlobalSecondaryIndexes.push(gsi)
       dm.ModelSchema = schema
 
+      loadDataModel(newModel, modelIndex, changes, matchData)
+    },
+    [model, modelIndex, datamodel, schema, tableChanges, matchData, loadDataModel],
+  )
+
+  // ── delete GSI ───────────────────────────────────────────────────────────────
+
+  const deleteGSI = useCallback(
+    (indexName: string) => {
+      const newModel = deepClone(model)
+      const dm = newModel.DataModel[modelIndex]
+      const changes = makeChange(model, modelIndex, datamodel!, tableChanges)
+      dm.GlobalSecondaryIndexes = dm.GlobalSecondaryIndexes.filter(
+        (g) => g.IndexName !== indexName,
+      )
+      dm.ModelSchema = schema
       loadDataModel(newModel, modelIndex, changes, matchData)
     },
     [model, modelIndex, datamodel, schema, tableChanges, matchData, loadDataModel],
@@ -839,6 +856,7 @@ export function useModelState(): ModelState {
     setValueTemplate,
     toggleSchema,
     addGSI,
+    deleteGSI,
     addNewTable,
     switchTable,
     applyQuery,

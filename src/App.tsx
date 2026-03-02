@@ -356,7 +356,24 @@ export default function App() {
                   className={`tab-btn ${activeTab === gsi.IndexName ? 'active' : ''}`}
                   onClick={() => setActiveTab(gsi.IndexName)}
                 >
-                  {gsi.IndexName}
+                  <span className="tab-title">{gsi.IndexName}</span>
+                  <button
+                    className="tab-icon-btn tab-icon-btn--danger"
+                    title={`Delete index ${gsi.IndexName}`}
+                    onClick={e => {
+                      e.stopPropagation()
+                      setConfirmModal({
+                        title: 'Delete Index',
+                        message: `Delete GSI '${gsi.IndexName}'?`,
+                        onOk: () => {
+                          setConfirmModal(null)
+                          if (activeTab === gsi.IndexName) setActiveTab('primary')
+                          state.deleteGSI(gsi.IndexName)
+                        },
+                        onCancel: () => setConfirmModal(null),
+                      })
+                    }}
+                  >🗑</button>
                 </button>
               ))}
             </div>
