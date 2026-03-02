@@ -144,7 +144,7 @@ export function useModelState(): ModelState {
         sortkey_datatype: dm.KeyAttributes.SortKey?.AttributeType ?? 'S',
       }
 
-      const data = [...dm.TableData]
+      const data = deepClone(dm.TableData)
       expandValueTemplates(data, sc)
 
       const displayData = newMatchData.length > 0 ? newMatchData : data
