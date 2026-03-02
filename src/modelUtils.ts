@@ -43,10 +43,12 @@ export interface KeyAttributes {
   SortKey?: KeyAttribute
 }
 
+export type ProjectionType = 'ALL' | 'KEYS_ONLY' | 'INCLUDE'
+
 export interface GSI {
   IndexName: string
   KeyAttributes: KeyAttributes
-  Projection?: { ProjectionType: string }
+  Projection?: { ProjectionType: ProjectionType; NonKeyAttributes?: string[] }
 }
 
 export interface NonKeyAttribute {

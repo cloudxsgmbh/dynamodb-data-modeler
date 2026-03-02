@@ -136,9 +136,9 @@ export default function App() {
     afterLoad()
   }
 
-  function handleCreateIndexConfirm({ pk, sk, pkType, skType, name }: { pk: string; sk: string; pkType: string; skType: string; name: string }) {
+  function handleCreateIndexConfirm({ pk, sk, pkType, skType, name, projectionType, includeAttrs }: { pk: string; sk: string; pkType: string; skType: string; name: string; projectionType: import('./modelUtils').ProjectionType; includeAttrs: string[] }) {
     setShowCreateIndex(false)
-    state.addGSI(name, pk, sk, pkType, skType)
+    state.addGSI(name, pk, sk, pkType, skType, projectionType, includeAttrs)
     afterLoad()
   }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Modal } from './Modal'
-import type { DataModel, TableConfig, SavedQuery, QueryFilter } from '../modelUtils'
+import type { DataModel, TableConfig, SavedQuery, QueryFilter, ProjectionType } from '../modelUtils'
 
 // ── Alert / Confirm Modal ─────────────────────────────────────────────────────
 
@@ -95,6 +95,8 @@ interface TableOrIndexDef {
   pkType: string
   skType: string
   name: string
+  projectionType: ProjectionType
+  includeAttrs: string[]
 }
 
 interface CreateTableOrIndexModalProps {
@@ -115,12 +117,26 @@ export function CreateTableOrIndexModal({
   const [pkType, setPkType] = useState('S')
   const [skType, setSkType] = useState('S')
   const [name, setName] = useState('')
+  const [projectionType, setProjectionType] = useState<ProjectionType>('ALL')
+  const [includeAttrInput, setIncludeAttrInput] = useState('')
+  const [includeAttrs, setIncludeAttrs] = useState<string[]>([])
+
+  function addIncludeAttr() {
+    const val = includeAttrInput.trim()
+    if (val && !includeAttrs.includes(val)) setIncludeAttrs((a) => [...a, val])
+    setIncludeAttrInput('')
+  }
+
+  function reset() {
+    setPk(''); setSk(''); setPkType('S'); setSkType('S'); setName('')
+    setProjectionType('ALL'); setIncludeAttrInput(''); setIncludeAttrs([])
+  }
 
   function handleCreate() {
     if (!pk.trim()) { alert('Please provide a partition key!'); return }
     if (!name.trim()) { alert('Please provide a name'); return }
-    onCreate({ pk, sk, pkType, skType, name })
-    setPk(''); setSk(''); setPkType('S'); setSkType('S'); setName('')
+    onCreate({ pk, sk, pkType, skType, name, projectionType, includeAttrs })
+    reset()
   }
 
   return (
@@ -155,6 +171,56 @@ export function CreateTableOrIndexModal({
       <hr />
       <label className="field-label">{isTable ? 'Table name:' : 'Index name:'}</label>
       <input className="field-input" value={name} onChange={(e) => setName(e.target.value)} />
+
+      {/* Projection – only relevant for GSIs */}
+      {!isTable && (
+        <>
+          <hr />
+          <label className="field-label">Projected Attributes:</label>
+          <select
+            className="field-select"
+            value={projectionType}
+            onChange={(e) => {
+              setProjectionType(e.target.value as ProjectionType)
+              setIncludeAttrs([])
+            }}
+          >
+            <option value="ALL">ALL – every attribute</option>
+            <option value="KEYS_ONLY">KEYS_ONLY – partition + sort keys only</option>
+            <option value="INCLUDE">INCLUDE – specified attributes only</option>
+          </select>
+          {projectionType === 'INCLUDE' && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <input
+                  className="field-input"
+                  style={{ flex: 1 }}
+                  placeholder="Attribute name"
+                  value={includeAttrInput}
+                  onChange={(e) => setIncludeAttrInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addIncludeAttr() } }}
+                />
+                <button className="btn-ok" onClick={addIncludeAttr}>Add</button>
+              </div>
+              {includeAttrs.length > 0 && (
+                <ul style={{ margin: '6px 0 0', paddingLeft: 20, fontSize: 13 }}>
+                  {includeAttrs.map((a) => (
+                    <li key={a} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {a}
+                      <button
+                        className="link-btn"
+                        style={{ fontSize: 12 }}
+                        onClick={() => setIncludeAttrs((arr) => arr.filter((x) => x !== a))}
+                      >✕</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
       <div className="modal-buttons">
         <button className="btn-cancel" onClick={onCancel}>Cancel</button>
         <button className="btn-ok" onClick={handleCreate}>Create</button>

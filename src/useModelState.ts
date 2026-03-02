@@ -21,6 +21,7 @@ import {
   type TableConfig,
   type SavedQuery,
   type GSI,
+  type ProjectionType,
 } from './modelUtils'
 
 const MAX_UNDO = 50
@@ -94,7 +95,7 @@ export interface ModelState {
   movePartition: (pkVal: string, direction: 'up' | 'down') => void
   setValueTemplate: (entityType: string, attrName: string, templateValue: string) => void
   toggleSchema: () => void
-  addGSI: (indexName: string, pk: string, sk: string, pkType: string, skType: string) => void
+  addGSI: (indexName: string, pk: string, sk: string, pkType: string, skType: string, projectionType: ProjectionType, includeAttrs: string[]) => void
   addNewTable: (tableName: string, pk: string, sk: string, pkType: string, skType: string) => void
   switchTable: (idx: number) => void
   applyQuery: (queryObj: SavedQuery) => void
@@ -216,7 +217,7 @@ export function useModelState(): ModelState {
   // ── add GSI ──────────────────────────────────────────────────────────────────
 
   const addGSI = useCallback(
-    (indexName: string, pk: string, sk: string, pkType: string, skType: string) => {
+    (indexName: string, pk: string, sk: string, pkType: string, skType: string, projectionType: ProjectionType, includeAttrs: string[]) => {
       const newModel = deepClone(model)
       const dm = newModel.DataModel[modelIndex]
       const changes = makeChange(model, modelIndex, datamodel!, tableChanges)
@@ -227,7 +228,12 @@ export function useModelState(): ModelState {
           PartitionKey: { AttributeName: pk, AttributeType: pkType || 'S' },
           SortKey: sk ? { AttributeName: sk, AttributeType: skType || 'S' } : undefined,
         },
-        Projection: { ProjectionType: 'ALL' },
+        Projection: {
+          ProjectionType: projectionType,
+          ...(projectionType === 'INCLUDE' && includeAttrs.length > 0
+            ? { NonKeyAttributes: includeAttrs }
+            : {}),
+        },
       }
       dm.GlobalSecondaryIndexes.push(gsi)
       dm.ModelSchema = schema
