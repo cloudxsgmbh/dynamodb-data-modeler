@@ -199,9 +199,32 @@ export default function App() {
 
   const displayData = state.matchData.length > 0 ? state.matchData : state.jsonData
 
-  // ── determine GSI display data (re-sort from full tableData) ───────────────
-  function getGSIData(_gsi: unknown) {
-    return state.datamodel?.TableData ?? []
+  // ── determine GSI display data, respecting ProjectionType ─────────────────
+  function getGSIData(gsi: typeof gsiList[0]): import('./modelUtils').DynamoItem[] {
+    const tableData = state.datamodel?.TableData ?? []
+    const projectionType = gsi.Projection?.ProjectionType ?? 'ALL'
+
+    if (projectionType === 'ALL') return tableData
+
+    // Keys always projected: GSI PK/SK + base table PK/SK
+    const basePK = state.table.partition_key
+    const baseSK = state.table.sort_key
+    const gsiPK  = gsi.KeyAttributes.PartitionKey.AttributeName
+    const gsiSK  = gsi.KeyAttributes.SortKey?.AttributeName
+    const alwaysIncluded = new Set([basePK, baseSK, gsiPK, gsiSK].filter(Boolean) as string[])
+
+    const includeAttrs: Set<string> =
+      projectionType === 'INCLUDE'
+        ? new Set([...alwaysIncluded, ...(gsi.Projection?.NonKeyAttributes ?? [])])
+        : alwaysIncluded // KEYS_ONLY
+
+    return tableData.map((item) => {
+      const projected: import('./modelUtils').DynamoItem = {}
+      for (const key of Object.keys(item)) {
+        if (includeAttrs.has(key)) projected[key] = item[key]
+      }
+      return projected
+    })
   }
 
   // ── tab rendering ──────────────────────────────────────────────────────────
@@ -262,9 +285,9 @@ export default function App() {
       const pk = activeGSI.KeyAttributes.PartitionKey.AttributeName
       const sk = activeGSI.KeyAttributes.SortKey?.AttributeName || ''
       const skt = activeGSI.KeyAttributes.SortKey?.AttributeType || 'S'
-      // Filter full table data for items that have this GSI's keys
+      // Only show items that participate in this GSI (have its PK)
       const gsiData = getGSIData(activeGSI).filter(
-        item => item.hasOwnProperty(pk)
+        (item) => Object.prototype.hasOwnProperty.call(item, pk),
       )
       return (
         <DynamoTable
