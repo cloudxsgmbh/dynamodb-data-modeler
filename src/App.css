@@ -73,11 +73,11 @@ a:hover { text-decoration: underline; }
   position: fixed;
   z-index: 200;
   top: 0;
-  left: 0;
+  right: 0;
   overflow-x: hidden;
   transition: width 0.3s;
   padding-top: 60px;
-  box-shadow: 4px 0 8px rgba(0,0,0,0.3);
+  box-shadow: -4px 0 8px rgba(0,0,0,0.3);
 }
 
 .sidenav.open { width: 260px; }
@@ -101,7 +101,7 @@ a:hover { text-decoration: underline; }
 .closebtn {
   position: absolute;
   top: 8px;
-  right: 20px;
+  left: 20px;
   font-size: 36px;
   background: transparent;
   border: none;
