@@ -232,6 +232,7 @@ export function DynamoTable({
                 onContextMenu={(e) => openContextMenu(e, buildPKContextMenuItems(pkVal, obj))}
               >
                 <div
+                  key={`pk-edit-${pkVal}-${pkDisplay}`}
                   className="editable-cell pk-context-menu"
                   contentEditable
                   suppressContentEditableWarning
@@ -273,6 +274,7 @@ export function DynamoTable({
                 onContextMenu={(e) => openContextMenu(e, buildSKContextMenuItems(pkVal, skVal, obj))}
               >
                 <div
+                  key={`sk-edit-${pkVal}-${skVal}-${skDisplay}`}
                   className="editable-cell sk-context-menu"
                   contentEditable
                   suppressContentEditableWarning
@@ -346,6 +348,7 @@ export function DynamoTable({
               <span className="map-placeholder" title="Map type – nested display not supported">…</span>
             ) : isEditable ? (
               <div
+                key={`v-edit-${pkVal}-${skVal}-${attrName}-${displayVal}`}
                 className="editable-cell cell-context-menu"
                 contentEditable
                 suppressContentEditableWarning

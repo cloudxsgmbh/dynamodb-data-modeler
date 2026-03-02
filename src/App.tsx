@@ -369,8 +369,8 @@ export default function App() {
               </div>
             )}
 
-            {/* Table */}
-            <div className="table-container">
+            {/* Table – key forces full remount on tab change, clearing stale contentEditable DOM */}
+            <div key={activeTab} className="table-container">
               {renderTable()}
             </div>
           </div>
