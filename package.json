@@ -11,11 +11,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@radix-ui/react-context-menu": "^2.3.1",
-    "@radix-ui/react-dialog": "^1.1.17",
-    "@radix-ui/react-select": "^2.3.1",
-    "@radix-ui/react-tooltip": "^1.2.10",
-    "lucide-react": "^1.20.0",
+    "@radix-ui/react-context-menu": "^2.3.3",
+    "@radix-ui/react-dialog": "^1.1.19",
+    "@radix-ui/react-select": "^2.3.3",
+    "@radix-ui/react-tooltip": "^1.2.12",
+    "lucide-react": "^1.25.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
