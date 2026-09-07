@@ -1,14 +1,26 @@
 # Release notes
 
+## 1.4.0
+
+August 7, 2026
+
+- Upgrade dependencies
+
+## 1.3.0
+
+July 1, 2026
+
+- Upgrade dependencies
+
 ## 1.2.0
 
-June 01, 2026
+June 1, 2026
 
 - Upgrade dependencies
 
 ## 1.1.0
 
-May 01, 2026
+May 1, 2026
 
 - Upgrade dependencies
 
