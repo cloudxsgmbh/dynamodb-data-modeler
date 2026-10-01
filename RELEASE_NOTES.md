@@ -1,5 +1,11 @@
 # Release notes
 
+## 1.5.0
+
+September 1, 2026
+
+- Upgrade dependencies
+
 ## 1.4.0
 
 August 7, 2026
